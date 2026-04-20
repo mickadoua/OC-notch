@@ -339,14 +339,16 @@ final class SessionMonitorService {
             logger.notice("SSE: server connected")
 
         case .sessionCreated(let sessionID, let info):
-            sessionToInstance[sessionID] = instanceID
+            // Don't map sessionToInstance here — shared SQLite means any instance
+            // can emit session.created for sessions it doesn't own.
+            // Ownership is established by busy/retry status or permission/question events.
             if activeSessions.contains(where: { $0.id == sessionID }) == false {
                 activeSessions.append(info)
             }
             completionDetector.trackSession(id: sessionID, title: info.title)
 
         case .sessionUpdated(let sessionID, let info):
-            sessionToInstance[sessionID] = instanceID
+            // Don't map sessionToInstance — same reason as sessionCreated.
             if let index = activeSessions.firstIndex(where: { $0.id == sessionID }) {
                 // Preserve status from session.status events
                 var updated = info
@@ -366,7 +368,12 @@ final class SessionMonitorService {
             completionDetector.removeSession(id: sessionID)
 
         case .sessionStatus(let sessionID, let status):
-            sessionToInstance[sessionID] = instanceID
+            switch status {
+            case .busy, .retry:
+                sessionToInstance[sessionID] = instanceID
+            case .idle:
+                sessionToInstance.removeValue(forKey: sessionID)
+            }
             if let index = activeSessions.firstIndex(where: { $0.id == sessionID }) {
                 activeSessions[index].status = status
             }
@@ -382,7 +389,7 @@ final class SessionMonitorService {
             }
 
         case .sessionIdle(let sessionID):
-            sessionToInstance[sessionID] = instanceID
+            sessionToInstance.removeValue(forKey: sessionID)
             if let index = activeSessions.firstIndex(where: { $0.id == sessionID }) {
                 // Check for idle transition completion via detector
                 if let completion = completionDetector.checkIdleTransition(sessionID: sessionID, newStatus: .idle) {
