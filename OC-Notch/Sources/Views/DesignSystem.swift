@@ -60,6 +60,14 @@ enum DS {
         static func counter() -> Font { .system(size: 13, weight: .bold, design: .rounded) }
         /// Stats (file counts, additions/deletions)
         static func stats() -> Font { .system(size: 10, weight: .medium, design: .monospaced) }
+
+        // Interactive tier — permission/question views where readability is critical
+        static func promptTitle() -> Font { .system(size: 15, weight: .semibold) }
+        static func promptBody() -> Font { .system(size: 13) }
+        static func promptBodyMono() -> Font { .system(size: 12, weight: .regular, design: .monospaced) }
+        static func promptOption() -> Font { .system(size: 12, weight: .medium) }
+        static func promptOptionDetail() -> Font { .system(size: 11) }
+        static func promptMicro() -> Font { .system(size: 10, weight: .medium, design: .rounded) }
     }
 
     // MARK: - Corner Radii
@@ -89,6 +97,12 @@ enum DS {
         static let sectionSpacing: CGFloat = 8
         static let elementSpacing: CGFloat = 6
         static let tightSpacing: CGFloat = 4
+
+        // Interactive tier
+        static let promptCardPadding: CGFloat = 18
+        static let promptInnerSpacing: CGFloat = 14
+        static let promptSectionSpacing: CGFloat = 12
+        static let promptElementSpacing: CGFloat = 8
     }
 
     // MARK: - Animations

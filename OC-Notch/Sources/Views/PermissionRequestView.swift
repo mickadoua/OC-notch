@@ -5,20 +5,20 @@ struct PermissionRequestView: View {
     @Environment(SessionMonitorService.self) private var monitor
 
     var body: some View {
-        VStack(alignment: .leading, spacing: DS.Spacing.cardInnerSpacing) {
-            HStack(spacing: DS.Spacing.sectionSpacing) {
+        VStack(alignment: .leading, spacing: DS.Spacing.promptInnerSpacing) {
+            HStack(spacing: DS.Spacing.promptSectionSpacing) {
                 Image(systemName: "exclamationmark.triangle.fill")
-                    .font(.system(size: 16))
+                    .font(.system(size: 20))
                     .foregroundStyle(DS.Colors.accentOrange)
                 Text(request.sessionTitle ?? request.sessionID)
-                    .font(DS.Typography.title())
+                    .font(DS.Typography.promptTitle())
                     .foregroundStyle(DS.Colors.textPrimary)
                 Spacer()
                 Text(request.permission)
-                    .font(DS.Typography.caption())
+                    .font(DS.Typography.promptOptionDetail())
                     .foregroundStyle(DS.Colors.textSecondary)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 3)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 4)
                     .background(
                         Capsule(style: .continuous)
                             .fill(DS.Colors.elevatedSurface)
@@ -27,14 +27,18 @@ struct PermissionRequestView: View {
 
             if let description = request.displayDescription {
                 Text(description)
-                    .font(DS.Typography.bodyMono())
+                    .font(DS.Typography.promptBodyMono())
                     .foregroundStyle(DS.Colors.textPrimary.opacity(0.9))
-                    .lineLimit(3)
-                    .dsElevatedSurface()
+                    .lineLimit(6)
+                    .padding(DS.Spacing.promptSectionSpacing)
                     .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(
+                        RoundedRectangle(cornerRadius: DS.Radii.small, style: .continuous)
+                            .fill(DS.Colors.elevatedSurface)
+                    )
             }
 
-            HStack(spacing: DS.Spacing.sectionSpacing) {
+            HStack(spacing: DS.Spacing.promptSectionSpacing) {
                 Button {
                     Task { await monitor.replyPermission(requestID: request.id, reply: .once) }
                 } label: {
@@ -42,7 +46,7 @@ struct PermissionRequestView: View {
                         Label("Allow Once", systemImage: "checkmark")
                         Text("⌘Y").dsShortcutBadge()
                     }
-                    .font(DS.Typography.caption())
+                    .font(DS.Typography.promptOption())
                 }
                 .buttonStyle(.borderedProminent)
                 .tint(DS.Colors.accentGreen)
@@ -55,7 +59,7 @@ struct PermissionRequestView: View {
                         Label("Always", systemImage: "checkmark.circle")
                         Text("⌘A").dsShortcutBadge()
                     }
-                    .font(DS.Typography.caption())
+                    .font(DS.Typography.promptOption())
                 }
                 .buttonStyle(.bordered)
                 .keyboardShortcut("a", modifiers: .command)
@@ -69,13 +73,13 @@ struct PermissionRequestView: View {
                         Label("Reject", systemImage: "xmark")
                         Text("⌘N").dsShortcutBadge()
                     }
-                    .font(DS.Typography.caption())
+                    .font(DS.Typography.promptOption())
                 }
                 .buttonStyle(.bordered)
                 .tint(DS.Colors.accentRed)
                 .keyboardShortcut("n", modifiers: .command)
             }
         }
-        .dsCardBackground()
+        .padding(DS.Spacing.promptCardPadding)
     }
 }

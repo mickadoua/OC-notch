@@ -19,7 +19,7 @@ struct QuestionRequestView: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: DS.Spacing.sectionSpacing) {
+        VStack(alignment: .leading, spacing: DS.Spacing.promptSectionSpacing) {
             if isMultiQuestion {
                 stepperHeader
             }
@@ -29,7 +29,7 @@ struct QuestionRequestView: View {
                     .transition(.blurFade())
             }
         }
-        .dsCardBackground()
+        .padding(DS.Spacing.promptCardPadding)
         .animation(DS.Animations.snappy, value: currentIndex)
         .onAppear { resetState() }
         .onChange(of: request.id) { _, _ in resetState() }
@@ -38,11 +38,11 @@ struct QuestionRequestView: View {
     // MARK: - Stepper Header
 
     private var stepperHeader: some View {
-        HStack(spacing: DS.Spacing.elementSpacing) {
+        HStack(spacing: DS.Spacing.promptElementSpacing) {
             if currentIndex > 0 {
                 Button { goBack() } label: {
                     Image(systemName: "chevron.left")
-                        .font(DS.Typography.micro())
+                        .font(DS.Typography.promptMicro())
                         .foregroundStyle(DS.Colors.textSecondary)
                 }
                 .buttonStyle(.plain)
@@ -51,11 +51,11 @@ struct QuestionRequestView: View {
             ForEach(0..<totalQuestions, id: \.self) { index in
                 Circle()
                     .fill(stepDotColor(for: index))
-                    .frame(width: 5, height: 5)
+                    .frame(width: 6, height: 6)
             }
 
             Text("\(currentIndex + 1)/\(totalQuestions)")
-                .font(DS.Typography.micro())
+                .font(DS.Typography.promptMicro())
                 .foregroundStyle(DS.Colors.textTertiary)
 
             Spacer()
@@ -71,23 +71,23 @@ struct QuestionRequestView: View {
     // MARK: - Question Content
 
     private func questionContent(_ question: OCQuestionInfo) -> some View {
-        VStack(alignment: .leading, spacing: DS.Spacing.cardInnerSpacing) {
-            HStack(spacing: DS.Spacing.sectionSpacing) {
+        VStack(alignment: .leading, spacing: DS.Spacing.promptInnerSpacing) {
+            HStack(spacing: DS.Spacing.promptSectionSpacing) {
                 Image(systemName: "questionmark.circle.fill")
-                    .font(.system(size: 16))
+                    .font(.system(size: 20))
                     .foregroundStyle(DS.Colors.accentBlue)
                 Text(question.header.isEmpty ? "Question" : question.header)
-                    .font(DS.Typography.title())
+                    .font(DS.Typography.promptTitle())
                     .foregroundStyle(DS.Colors.textPrimary)
                 Spacer()
             }
 
             Text(question.question)
-                .font(DS.Typography.body())
+                .font(DS.Typography.promptBody())
                 .foregroundStyle(DS.Colors.textPrimary.opacity(0.9))
-                .lineLimit(4)
+                .lineLimit(8)
 
-            VStack(spacing: DS.Spacing.tightSpacing) {
+            VStack(spacing: DS.Spacing.promptElementSpacing) {
                 ForEach(Array(question.options.enumerated()), id: \.offset) { index, option in
                     if question.multiple {
                         multiSelectButton(option: option, index: index)
@@ -143,10 +143,10 @@ struct QuestionRequestView: View {
     private func customInputField(question: OCQuestionInfo) -> some View {
         TextField("Type your answer…", text: $customText)
             .textFieldStyle(.plain)
-            .font(DS.Typography.caption())
+            .font(DS.Typography.promptOption())
             .foregroundStyle(DS.Colors.textPrimary)
-            .padding(.horizontal, DS.Spacing.cardInnerSpacing)
-            .padding(.vertical, DS.Spacing.elementSpacing)
+            .padding(.horizontal, DS.Spacing.promptInnerSpacing)
+            .padding(.vertical, DS.Spacing.promptElementSpacing)
             .background(
                 RoundedRectangle(cornerRadius: DS.Radii.small, style: .continuous)
                     .fill(DS.Colors.elevatedSurface)
@@ -176,16 +176,16 @@ struct QuestionRequestView: View {
         } label: {
             HStack(spacing: DS.Spacing.tightSpacing) {
                 Text(isLastQuestion ? "Submit" : "Next")
-                    .font(DS.Typography.caption())
+                    .font(DS.Typography.promptOption())
                     .foregroundStyle(DS.Colors.textPrimary)
                 if !isLastQuestion {
                     Image(systemName: "chevron.right")
-                        .font(DS.Typography.micro())
+                        .font(DS.Typography.promptMicro())
                         .foregroundStyle(DS.Colors.textPrimary)
                 }
             }
-            .padding(.horizontal, DS.Spacing.cardInnerSpacing)
-            .padding(.vertical, DS.Spacing.elementSpacing)
+            .padding(.horizontal, DS.Spacing.promptInnerSpacing)
+            .padding(.vertical, DS.Spacing.promptElementSpacing)
             .background(
                 RoundedRectangle(cornerRadius: DS.Radii.small, style: .continuous)
                     .fill(currentSelections.isEmpty ? DS.Colors.elevatedSurface : DS.Colors.accentBlue.opacity(0.3))
@@ -210,19 +210,19 @@ struct QuestionRequestView: View {
         HStack {
             if isSelected {
                 Image(systemName: "checkmark.circle.fill")
-                    .font(.system(size: 10))
+                    .font(.system(size: 12))
                     .foregroundStyle(DS.Colors.accentBlue)
             }
 
             Text(option.label)
-                .font(DS.Typography.caption())
+                .font(DS.Typography.promptOption())
                 .foregroundStyle(DS.Colors.textPrimary)
 
             if option.description.isEmpty == false {
                 Text(option.description)
-                    .font(DS.Typography.caption())
+                    .font(DS.Typography.promptOptionDetail())
                     .foregroundStyle(DS.Colors.textSecondary)
-                    .lineLimit(1)
+                    .lineLimit(2)
             }
 
             Spacer()
@@ -231,8 +231,8 @@ struct QuestionRequestView: View {
                 Text("⌘\(key.uppercased())").dsShortcutBadge()
             }
         }
-        .padding(.horizontal, DS.Spacing.cardInnerSpacing)
-        .padding(.vertical, DS.Spacing.elementSpacing)
+        .padding(.horizontal, DS.Spacing.promptInnerSpacing)
+        .padding(.vertical, DS.Spacing.promptElementSpacing)
         .background(
             RoundedRectangle(cornerRadius: DS.Radii.small, style: .continuous)
                 .fill(isSelected ? DS.Colors.accentBlue.opacity(0.15) : DS.Colors.elevatedSurface)

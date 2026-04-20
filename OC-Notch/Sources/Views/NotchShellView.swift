@@ -100,14 +100,17 @@ struct NotchShellView: View {
             HStack(spacing: 0) {
                 AvatarView(scene: avatarScene)
                     .frame(maxWidth: .infinity, alignment: .trailing)
+                    .padding(.trailing, 12)
 
                 Spacer()
                     .frame(width: notchWidth)
 
                 SessionCounterView()
                     .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.leading, 12)
             }
             .frame(height: 36)
+            .frame(maxWidth: notchWidth + 140)
             .padding(.horizontal, 8)
             .background(
                 ZStack {
@@ -285,7 +288,7 @@ struct NotchShellView: View {
     }
 
     private var pillWidth: CGFloat {
-        max(notchWidth + 80, 300)
+        max(notchWidth + 220, 460)
     }
 }
 

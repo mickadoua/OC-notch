@@ -90,7 +90,7 @@ final class NotchPanelController {
     let sessionMonitor = SessionMonitorService()
 
     private static let collapsedHeight: CGFloat = 44
-    private static let expandedHeight: CGFloat = 420
+    private static let expandedHeight: CGFloat = 520
 
     func showPanel() {
         let frame = calculateNotchFrame(expanded: false)
@@ -156,10 +156,9 @@ final class NotchPanelController {
            let leftArea = screen.auxiliaryTopLeftArea,
            let rightArea = screen.auxiliaryTopRightArea {
             let notchW = rightArea.minX - leftArea.maxX
-            notchWidth = notchW + 160
+            notchWidth = expanded ? notchW + 380 : notchW + 160
         } else {
-            // No notch: use a reasonable pill width for top-center overlay
-            notchWidth = 400
+            notchWidth = expanded ? 580 : 400
         }
 
         let width = min(notchWidth, screenFrame.width)
