@@ -15,12 +15,31 @@ enum TerminalLauncher {
 
     @MainActor
     static func activateTerminal() {
-        activateTerminal(directory: nil)
+        activateTerminal(tab: nil, pid: nil, directory: nil)
     }
 
     @MainActor
-    static func activateTerminal(directory: String?) {
-        let tty: String? = directory.flatMap { findTTY(forDirectory: $0) }
+    static func activateTerminal(pid: Int32?, directory: String?) {
+        activateTerminal(tab: nil, pid: pid, directory: directory)
+    }
+
+    @MainActor
+    static func activateTerminal(tab: TerminalTab?, pid: Int32?, directory: String?) {
+        if let tab {
+            if let app = NSRunningApplication.runningApplications(withBundleIdentifier: tab.bundleID).first {
+                app.activate()
+                focusTerminalTab(tab, directory: directory)
+                logger.notice("Activated terminal via probe: \(tab.bundleID) tty=\(tab.tty)")
+                return
+            }
+        }
+
+        let tty: String?
+        if let pid {
+            tty = getTTY(pid: pid)
+        } else {
+            tty = directory.flatMap { findTTY(forDirectory: $0) }
+        }
 
         for bundleID in terminalBundleIDs {
             if let app = NSRunningApplication.runningApplications(withBundleIdentifier: bundleID).first {
@@ -43,10 +62,23 @@ enum TerminalLauncher {
 
     // MARK: - Window Focus
 
+    private static func focusTerminalTab(_ tab: TerminalTab, directory: String?) {
+        switch tab.bundleID {
+        case "com.googlecode.iterm2":
+            focusiTermWindow(iTermSessionID: tab.sessionID, tty: tab.tty, directory: directory)
+        case "com.mitchellh.ghostty":
+            focusGhosttyWindow(directory: directory ?? "", tty: tab.tty)
+        case "com.apple.Terminal":
+            focusAppleTerminalWindow(directory: directory ?? "", tty: tab.tty)
+        default:
+            break
+        }
+    }
+
     private static func focusWindowForDirectory(bundleID: String, directory: String, tty: String?) {
         switch bundleID {
         case "com.mitchellh.ghostty":
-            focusGhosttyWindow(directory: directory)
+            focusGhosttyWindow(directory: directory, tty: tty)
         case "com.googlecode.iterm2":
             focusiTermWindow(directory: directory, tty: tty)
         case "com.apple.Terminal":
@@ -56,11 +88,29 @@ enum TerminalLauncher {
         }
     }
 
-    private static func focusGhosttyWindow(directory: String) {
+    private static func focusGhosttyWindow(directory: String, tty: String?) {
         let dirName = (directory as NSString).lastPathComponent
+
+        let ttyMatchBlock: String
+        if let tty {
+            ttyMatchBlock = """
+                set targetTTY to "\(tty)"
+                repeat with w in windows
+                    set wName to name of w
+                    if wName contains targetTTY then
+                        set index of w to 1
+                        return
+                    end if
+                end repeat
+                """
+        } else {
+            ttyMatchBlock = ""
+        }
+
         let script = """
             tell application "Ghostty"
                 activate
+                \(ttyMatchBlock)
                 set targetDir to "\(directory)"
                 set targetName to "\(dirName)"
                 repeat with w in windows
@@ -72,27 +122,60 @@ enum TerminalLauncher {
                 end repeat
             end tell
             """
-        logger.notice("Ghostty focus: dir=\(directory) dirName=\(dirName)")
+        logger.notice("Ghostty focus: dir=\(directory) dirName=\(dirName) tty=\(tty ?? "nil")")
         runAppleScript(script)
     }
 
     private static func focusiTermWindow(directory: String, tty: String?) {
-        let dirName = (directory as NSString).lastPathComponent
-        let normalizedDir = normalizePath(directory)
+        focusiTermWindow(iTermSessionID: nil, tty: tty, directory: directory)
+    }
 
-        let ttyMatch = tty.map { "tty of s is \"\($0)\"" } ?? "false"
-        let script = """
-            tell application "iTerm"
-                activate
+    private static func focusiTermWindow(iTermSessionID: String?, tty: String?, directory: String?) {
+        let dirName = directory.map { ($0 as NSString).lastPathComponent }
+        let normalizedDir = directory.map { normalizePath($0) }
+
+        // Priority: iTerm session ID → TTY → directory name
+        var matchBlocks: [String] = []
+
+        if let iTermSessionID, iTermSessionID.isEmpty == false {
+            matchBlocks.append("""
                 repeat with w in windows
                     repeat with t in tabs of w
                         repeat with s in sessions of t
-                            if \(ttyMatch) then
+                            if (id of s as text) is "\(iTermSessionID)" then
                                 select t
                                 select s
                                 set index of w to 1
                                 return
                             end if
+                        end repeat
+                    end repeat
+                end repeat
+                """)
+        }
+
+        if let tty {
+            matchBlocks.append("""
+                repeat with w in windows
+                    repeat with t in tabs of w
+                        repeat with s in sessions of t
+                            if tty of s is "\(tty)" then
+                                select t
+                                select s
+                                set index of w to 1
+                                return
+                            end if
+                        end repeat
+                    end repeat
+                end repeat
+                """)
+        }
+
+        if let normalizedDir, let dirName {
+            matchBlocks.append("""
+                repeat with w in windows
+                    repeat with t in tabs of w
+                        repeat with s in sessions of t
                             set sName to name of s
                             if sName contains "\(normalizedDir)" or sName contains "\(dirName)" then
                                 select t
@@ -103,9 +186,16 @@ enum TerminalLauncher {
                         end repeat
                     end repeat
                 end repeat
+                """)
+        }
+
+        let script = """
+            tell application "iTerm"
+                activate
+                \(matchBlocks.joined(separator: "\n            "))
             end tell
             """
-        logger.notice("iTerm focus: dir=\(directory) tty=\(tty ?? "nil")")
+        logger.notice("iTerm focus: dir=\(directory ?? "nil") sessionID=\(iTermSessionID ?? "nil") tty=\(tty ?? "nil")")
         runAppleScript(script)
     }
 

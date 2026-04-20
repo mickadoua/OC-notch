@@ -76,7 +76,11 @@ private struct SessionRowButton: View {
     var body: some View {
         Button {
             onDismiss()
-            TerminalLauncher.activateTerminal(directory: session.directory)
+            TerminalLauncher.activateTerminal(
+                tab: monitor.terminalTabForSession(session.id),
+                pid: monitor.pidForSession(session.id),
+                directory: session.directory
+            )
         } label: {
             HStack(spacing: DS.Spacing.sectionSpacing) {
                 // Animated status dot

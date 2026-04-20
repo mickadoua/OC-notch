@@ -23,7 +23,9 @@ actor ProcessScanner {
                     id: "pid-\(pid)",
                     pid: pid,
                     port: port,
-                    hostname: "127.0.0.1"
+                    hostname: "127.0.0.1",
+                    directory: getCWD(pid: pid),
+                    tty: getTTY(pid: pid)
                 )
                 instances.append(instance)
                 logger.notice("Found OpenCode instance: PID \(pid) on port \(port)")
@@ -148,5 +150,23 @@ actor ProcessScanner {
             }
         }
         return nil
+    }
+
+    private func getTTY(pid: Int32) -> String? {
+        let task = Process()
+        let pipe = Pipe()
+        task.executableURL = URL(fileURLWithPath: "/bin/ps")
+        task.arguments = ["-p", "\(pid)", "-o", "tty="]
+        task.standardOutput = pipe
+        task.standardError = FileHandle.nullDevice
+
+        do { try task.run(); task.waitUntilExit() } catch { return nil }
+
+        let data = pipe.fileHandleForReading.readDataToEndOfFile()
+        guard let output = String(data: data, encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines),
+              output.isEmpty == false, output != "??"
+        else { return nil }
+
+        return output.hasPrefix("/dev/") ? output : "/dev/\(output)"
     }
 }

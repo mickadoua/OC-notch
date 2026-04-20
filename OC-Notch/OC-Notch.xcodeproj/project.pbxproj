@@ -14,6 +14,7 @@
 		23B4647D1F1A95E34F2DACD4 /* SessionCounterView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 532B97451217BB6A3FFB39C4 /* SessionCounterView.swift */; };
 		2E6E3A47F8484F0052D1EDC2 /* OpenCodeServerManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 76BE3D15519DADA5A3400D39 /* OpenCodeServerManager.swift */; };
 		4EE8372683BD266B865E8C92 /* SessionDropdownView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44C640028693BA68BDFC1478 /* SessionDropdownView.swift */; };
+		5013936A97443CD49970FABF /* TerminalTabProbe.swift in Sources */ = {isa = PBXBuildFile; fileRef = C17981293552C95D3E2F49FF /* TerminalTabProbe.swift */; };
 		59E7C4AE32B0E96EECC86756 /* TerminalLauncher.swift in Sources */ = {isa = PBXBuildFile; fileRef = FB57CD9F6A9AAC80151229D1 /* TerminalLauncher.swift */; };
 		6E9C35D0079245635200199D /* AvatarStateManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = E1AE829AC7A8A5D2B60EA9BC /* AvatarStateManager.swift */; };
 		73082B943D478EAF74FFE51E /* OpenCodeSSEClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = D91722C6B556944BF85AD212 /* OpenCodeSSEClient.swift */; };
@@ -58,6 +59,7 @@
 		A674B4DCAAA07E7CB1659357 /* OpenCodeHTTPClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OpenCodeHTTPClient.swift; sourceTree = "<group>"; };
 		A8611B2A191752D13FE8057F /* ProcessScanner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProcessScanner.swift; sourceTree = "<group>"; };
 		C0EA1DA258A9EB301192C124 /* CompletionDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CompletionDetector.swift; sourceTree = "<group>"; };
+		C17981293552C95D3E2F49FF /* TerminalTabProbe.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TerminalTabProbe.swift; sourceTree = "<group>"; };
 		D91722C6B556944BF85AD212 /* OpenCodeSSEClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OpenCodeSSEClient.swift; sourceTree = "<group>"; };
 		DB89A4EA65170241F19BA916 /* AvatarScene.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AvatarScene.swift; sourceTree = "<group>"; };
 		E1AE829AC7A8A5D2B60EA9BC /* AvatarStateManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AvatarStateManager.swift; sourceTree = "<group>"; };
@@ -133,6 +135,7 @@
 			children = (
 				FA6876F02D605411C795C2CB /* ScreenExtensions.swift */,
 				FB57CD9F6A9AAC80151229D1 /* TerminalLauncher.swift */,
+				C17981293552C95D3E2F49FF /* TerminalTabProbe.swift */,
 			);
 			path = Utilities;
 			sourceTree = "<group>";
@@ -267,6 +270,7 @@
 				105EFF36274A8BBAEE20B3EA /* SessionMonitorService.swift in Sources */,
 				0647BFE10C46E1EBBF7A3C88 /* TaskCompletionView.swift in Sources */,
 				59E7C4AE32B0E96EECC86756 /* TerminalLauncher.swift in Sources */,
+				5013936A97443CD49970FABF /* TerminalTabProbe.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

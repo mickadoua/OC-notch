@@ -4,6 +4,7 @@ import SwiftUI
 /// Auto-dismisses after 5s. Includes "Open" button to focus the terminal.
 struct TaskCompletionView: View {
     let completion: TaskCompletionInfo
+    @Environment(SessionMonitorService.self) private var monitor
 
     var body: some View {
         VStack(alignment: .leading, spacing: DS.Spacing.sectionSpacing) {
@@ -18,7 +19,12 @@ struct TaskCompletionView: View {
                 Spacer()
 
                 Button {
-                    TerminalLauncher.activateTerminal()
+                    let sessionDir = monitor.activeSessions.first(where: { $0.id == completion.sessionID })?.directory
+                    TerminalLauncher.activateTerminal(
+                        tab: monitor.terminalTabForSession(completion.sessionID),
+                        pid: monitor.pidForSession(completion.sessionID),
+                        directory: sessionDir
+                    )
                 } label: {
                     HStack(spacing: 3) {
                         Text("Open")

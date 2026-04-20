@@ -146,6 +146,15 @@ enum OCToolState: Equatable {
     case error(message: String?)
 }
 
+// MARK: - Terminal Tab
+
+struct TerminalTab: Equatable, Sendable {
+    let bundleID: String     // e.g. "com.googlecode.iterm2"
+    let sessionID: String?   // iTerm session ID (not OCSession.id)
+    let tty: String          // /dev/ttysXXX
+    let title: String?
+}
+
 // MARK: - OpenCode Instance
 
 /// Represents a discovered OpenCode server instance.
@@ -154,6 +163,10 @@ struct OCInstance: Identifiable, Equatable {
     let pid: Int32
     let port: Int
     let hostname: String
+    let directory: String?
+    let tty: String?
+
+    var terminalTab: TerminalTab? = nil
 
     var baseURL: URL {
         URL(string: "http://\(hostname):\(port)")!

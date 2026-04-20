@@ -115,6 +115,45 @@ final class SessionMonitorService {
         return httpClients[instanceID]
     }
 
+    /// Returns the PID of the OpenCode instance that owns the given session, if known.
+    func pidForSession(_ sessionID: String) -> Int32? {
+        if let instanceID = sessionToInstance[sessionID] {
+            return instances.first(where: { $0.id == instanceID })?.pid
+        }
+
+        guard let session = activeSessions.first(where: { $0.id == sessionID }) else { return nil }
+        let sameDirInstances = instances.filter { $0.directory == session.directory }
+        guard sameDirInstances.isEmpty == false else { return nil }
+        if sameDirInstances.count == 1 { return sameDirInstances[0].pid }
+
+        // Distribute unmapped sessions across same-dir instances deterministically.
+        // Each unmapped session gets a different instance by index position.
+        let unmappedSameDirSessions = activeSessions
+            .filter { $0.directory == session.directory && sessionToInstance[$0.id] == nil }
+            .sorted(by: { $0.id < $1.id })
+
+        let sessionIndex = unmappedSameDirSessions.firstIndex(where: { $0.id == sessionID }) ?? 0
+        return sameDirInstances[sessionIndex % sameDirInstances.count].pid
+    }
+
+    func terminalTabForSession(_ sessionID: String) -> TerminalTab? {
+        if let instanceID = sessionToInstance[sessionID] {
+            return instances.first(where: { $0.id == instanceID })?.terminalTab
+        }
+
+        guard let session = activeSessions.first(where: { $0.id == sessionID }) else { return nil }
+        let sameDirInstances = instances.filter { $0.directory == session.directory }
+        guard sameDirInstances.isEmpty == false else { return nil }
+        if sameDirInstances.count == 1 { return sameDirInstances[0].terminalTab }
+
+        let unmappedSameDirSessions = activeSessions
+            .filter { $0.directory == session.directory && sessionToInstance[$0.id] == nil }
+            .sorted(by: { $0.id < $1.id })
+
+        let sessionIndex = unmappedSameDirSessions.firstIndex(where: { $0.id == sessionID }) ?? 0
+        return sameDirInstances[sessionIndex % sameDirInstances.count].terminalTab
+    }
+
     // MARK: - Instance Discovery
 
     private func scanForInstances() async {
@@ -158,11 +197,18 @@ final class SessionMonitorService {
                     }
                 }
 
-                // Seed initial session statuses from the HTTP API so we don't miss
-                // sessions that were already busy before the SSE connection started.
+                // Seed sessionToInstance from status endpoint for busy/retry sessions.
+                // Idle sessions will be mapped later when SSE events arrive.
                 if let statuses = await httpClient.getSessionStatuses() {
                     for (sessionID, status) in statuses {
-                        sessionToInstance[sessionID] = instance.id
+                        // Busy/retry status is instance-specific (in-memory state).
+                        // Map these sessions to the instance that owns them.
+                        switch status {
+                        case .busy, .retry:
+                            sessionToInstance[sessionID] = instance.id
+                        case .idle:
+                            break
+                        }
                         if let index = activeSessions.firstIndex(where: { $0.id == sessionID }) {
                             activeSessions[index].status = status
                         }
@@ -174,6 +220,13 @@ final class SessionMonitorService {
         }
 
         instances = discovered
+
+        let terminalTabs = await TerminalTabProbe.snapshot()
+        for i in instances.indices {
+            guard let instanceTTY = instances[i].tty else { continue }
+            instances[i].terminalTab = terminalTabs.first(where: { $0.tty == instanceTTY })
+        }
+
         let totalPIDs = await processScanner.countProcesses()
         let serverCount = discovered.count
         opencodePIDCount = max(totalPIDs - serverCount, 0)
@@ -190,9 +243,17 @@ final class SessionMonitorService {
 
             var httpStatuses: [String: OCSessionStatus] = [:]
             var httpResponded = false
-            for httpClient in httpClients.values {
+            for (instanceID, httpClient) in httpClients {
                 if let statuses = await httpClient.getSessionStatuses() {
                     httpResponded = true
+                    for (sessionID, status) in statuses {
+                        switch status {
+                        case .busy, .retry:
+                            sessionToInstance[sessionID] = instanceID
+                        case .idle:
+                            break
+                        }
+                    }
                     httpStatuses.merge(statuses) { _, new in new }
                 }
             }
@@ -305,6 +366,7 @@ final class SessionMonitorService {
             completionDetector.removeSession(id: sessionID)
 
         case .sessionStatus(let sessionID, let status):
+            sessionToInstance[sessionID] = instanceID
             if let index = activeSessions.firstIndex(where: { $0.id == sessionID }) {
                 activeSessions[index].status = status
             }
@@ -320,6 +382,7 @@ final class SessionMonitorService {
             }
 
         case .sessionIdle(let sessionID):
+            sessionToInstance[sessionID] = instanceID
             if let index = activeSessions.firstIndex(where: { $0.id == sessionID }) {
                 // Check for idle transition completion via detector
                 if let completion = completionDetector.checkIdleTransition(sessionID: sessionID, newStatus: .idle) {
