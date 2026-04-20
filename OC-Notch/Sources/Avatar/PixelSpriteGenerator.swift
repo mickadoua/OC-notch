@@ -77,6 +77,8 @@ enum PixelSpriteGenerator {
 
     private static func drawIdleFrame(grid: inout [[NSColor]], frame: Int, cx: Int, cy: Int) {
         let bob = frame % 2 == 0 ? 0 : 1 // Subtle vertical bob
+        // Shift up by 1 to vertically center the sprite (body extends to cy+3, feet to cy+4)
+        let baseCy = cy - 1
         let body = NSColor(red: 0.3, green: 0.8, blue: 0.4, alpha: 1) // Green creature
         let eye = NSColor.white
         let pupil = NSColor(red: 0.1, green: 0.1, blue: 0.1, alpha: 1)
@@ -85,29 +87,29 @@ enum PixelSpriteGenerator {
         for dy in -3...3 {
             let w = dy == -3 || dy == 3 ? 2 : (abs(dy) == 2 ? 3 : 4)
             for dx in -w...w {
-                setPixel(grid: &grid, x: cx + dx, y: cy + dy + bob, color: body)
+                setPixel(grid: &grid, x: cx + dx, y: baseCy + dy + bob, color: body)
             }
         }
 
         // Eyes
-        setPixel(grid: &grid, x: cx - 2, y: cy - 1 + bob, color: eye)
-        setPixel(grid: &grid, x: cx + 2, y: cy - 1 + bob, color: eye)
-        setPixel(grid: &grid, x: cx - 2, y: cy - 1 + bob, color: pupil) // Overlaid for blink frames
+        setPixel(grid: &grid, x: cx - 2, y: baseCy - 1 + bob, color: eye)
+        setPixel(grid: &grid, x: cx + 2, y: baseCy - 1 + bob, color: eye)
+        setPixel(grid: &grid, x: cx - 2, y: baseCy - 1 + bob, color: pupil) // Overlaid for blink frames
         if frame != 2 { // Blink on frame 2
-            setPixel(grid: &grid, x: cx - 2, y: cy - 2 + bob, color: eye)
-            setPixel(grid: &grid, x: cx + 2, y: cy - 2 + bob, color: eye)
-            setPixel(grid: &grid, x: cx - 2, y: cy - 2 + bob, color: pupil)
-            setPixel(grid: &grid, x: cx + 2, y: cy - 2 + bob, color: pupil)
+            setPixel(grid: &grid, x: cx - 2, y: baseCy - 2 + bob, color: eye)
+            setPixel(grid: &grid, x: cx + 2, y: baseCy - 2 + bob, color: eye)
+            setPixel(grid: &grid, x: cx - 2, y: baseCy - 2 + bob, color: pupil)
+            setPixel(grid: &grid, x: cx + 2, y: baseCy - 2 + bob, color: pupil)
         }
 
         // Mouth
-        setPixel(grid: &grid, x: cx - 1, y: cy + 1 + bob, color: pupil)
-        setPixel(grid: &grid, x: cx, y: cy + 1 + bob, color: pupil)
-        setPixel(grid: &grid, x: cx + 1, y: cy + 1 + bob, color: pupil)
+        setPixel(grid: &grid, x: cx - 1, y: baseCy + 1 + bob, color: pupil)
+        setPixel(grid: &grid, x: cx, y: baseCy + 1 + bob, color: pupil)
+        setPixel(grid: &grid, x: cx + 1, y: baseCy + 1 + bob, color: pupil)
 
         // Feet
-        setPixel(grid: &grid, x: cx - 2, y: cy + 4 + bob, color: body)
-        setPixel(grid: &grid, x: cx + 2, y: cy + 4 + bob, color: body)
+        setPixel(grid: &grid, x: cx - 2, y: baseCy + 4 + bob, color: body)
+        setPixel(grid: &grid, x: cx + 2, y: baseCy + 4 + bob, color: body)
     }
 
     // MARK: - Thinking: Eyes dart side to side
