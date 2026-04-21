@@ -93,7 +93,7 @@ check-clean:
 bump:
 	@echo "→ Bumping version to $(V)..."
 	@/usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $(V)" $(PROJECT_DIR)/Sources/App/Info.plist
-	@NEW_BUILD=$$(( $$((/usr/libexec/PlistBuddy -c "Print CFBundleVersion" $(PROJECT_DIR)/Sources/App/Info.plist)) + 1 )); \
+	@NEW_BUILD=$$(( $$(/usr/libexec/PlistBuddy -c "Print CFBundleVersion" $(PROJECT_DIR)/Sources/App/Info.plist) + 1 )); \
 		/usr/libexec/PlistBuddy -c "Set :CFBundleVersion $$NEW_BUILD" $(PROJECT_DIR)/Sources/App/Info.plist; \
 		echo "   Version: $(V) (build $$NEW_BUILD)"
 	@git add $(PROJECT_DIR)/Sources/App/Info.plist
