@@ -22,6 +22,7 @@ struct SessionCounterView: View {
                         .scaleEffect(hasActiveSessions ? 1.0 : 0.5)
                         .animation(.easeInOut(duration: 1.5).repeatForever(autoreverses: true), value: hasActiveSessions)
                 )
+                .frame(width: 12, height: 12)
 
             Text("\(monitor.activeSessions.count)")
                 .font(DS.Typography.counter())

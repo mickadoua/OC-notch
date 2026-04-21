@@ -111,8 +111,7 @@ struct NotchShellView: View {
         Button(action: toggleDropdown) {
             HStack(spacing: 0) {
                 AvatarView(scene: avatarScene, size: 36 * currentDisplayScale)
-                    .frame(maxWidth: .infinity, alignment: .trailing)
-                    .padding(.trailing, 12)
+                    .frame(maxWidth: .infinity, alignment: .center)
 
                 Spacer()
                     .frame(width: currentNotchWidth)
@@ -134,6 +133,7 @@ struct NotchShellView: View {
                 }
                 .animation(DS.Animations.smooth, value: isHovering)
             )
+            .clipShape(RoundedRectangle(cornerRadius: DS.Radii.compactBottom, style: .continuous))
         }
         .buttonStyle(.plain)
         .onHover { hovering in

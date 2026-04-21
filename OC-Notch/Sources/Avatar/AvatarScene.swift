@@ -63,6 +63,12 @@ final class AvatarScene: SKScene {
         fatalError("init(coder:) is not supported")
     }
 
+    override func didChangeSize(_ oldSize: CGSize) {
+        super.didChangeSize(oldSize)
+        sprite.size = size
+        sprite.position = CGPoint(x: size.width / 2, y: size.height / 2)
+    }
+
     // MARK: - State Management
 
     func setState(_ newState: AvatarState) {
