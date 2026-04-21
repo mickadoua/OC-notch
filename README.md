@@ -138,13 +138,13 @@ OC-Notch discovers OpenCode instances by scanning running processes, connects vi
 ## Release (Maintainers)
 
 ```bash
-# One-time: store notarization credentials
-xcrun notarytool store-credentials "OC-Notch-Notarize" \
-  --apple-id "YOUR_APPLE_ID" \
-  --team-id "literal:REDACTED_TEAM_ID" \
-  --password "APP_SPECIFIC_PASSWORD"
+# 1. Copy the local config template and fill in your Apple Developer signing values
+cp local.mk.example local.mk
+# Edit local.mk with your TEAM_ID, DEVELOPER_NAME, etc.
 
-# Full pipeline: clean → build → sign → notarize → staple → zip
+# 2. Store notarization credentials in Keychain (one-time, see local.mk.example)
+
+# 3. Full pipeline: clean → build → sign → notarize → staple → zip
 make release
 ```
 

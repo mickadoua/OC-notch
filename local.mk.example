@@ -1,0 +1,18 @@
+# OC-Notch — Local signing configuration
+# Copy this file to local.mk and fill in your values.
+# local.mk is gitignored and MUST NOT be committed.
+#
+# To find your values:
+#   Team ID:     Apple Developer Portal → Membership → Team ID
+#   Apple ID:    Your Apple Developer account email
+#   App password: appleid.apple.com → Sign-In and Security → App-Specific Passwords
+
+TEAM_ID         := YOUR_TEAM_ID
+DEVELOPER_NAME  := Your Name
+KEYCHAIN_PROFILE := OC-Notch-Notarize
+
+# Store notarization credentials in Keychain (one-time setup):
+#   xcrun notarytool store-credentials "$(KEYCHAIN_PROFILE)" \
+#     --apple-id "your@email.com" \
+#     --team-id "$(TEAM_ID)" \
+#     --password "YOUR_APP_SPECIFIC_PASSWORD"

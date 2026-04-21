@@ -14,3 +14,27 @@ DerivedData/
 
 # macOS
 .DS_Store
+
+# Local signing config (contains developer identity & team ID)
+local.mk
+
+# Environment / secrets
+.env
+.env.*
+.env.local
+
+# Certificates & keys
+*.p12
+*.p8
+*.pem
+*.cer
+*.key
+*.mobileprovision
+
+# Firebase / Google
+GoogleService-Info.plist
+google-services.json
+
+# Xcode local config
+*.xcconfig
+!Shared.xcconfig

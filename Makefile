@@ -12,19 +12,27 @@
 #
 # Prerequisites:
 #   1. Apple Developer ID Application certificate installed in Keychain
-#   2. App-specific password stored in Keychain:
-#      xcrun notarytool store-credentials "OC-Notch-Notarize" \
-#        --apple-id "YOUR_APPLE_ID@email.com" \
-#        --team-id "literal:REDACTED_TEAM_ID" \
-#        --password "YOUR_APP_SPECIFIC_PASSWORD"
-#   3. gh CLI authenticated (gh auth login)
+#   2. Copy local.mk.example → local.mk and fill in your signing values
+#   3. Store notarization credentials (see local.mk.example for command)
+#   4. gh CLI authenticated (gh auth login)
+
+# ─── Local config (signing identity, team ID) ───────────────────
+-include local.mk
 
 # ─── Configuration ───────────────────────────────────────────────
 APP_NAME        := OC-Notch
 BUNDLE_ID       := com.oc-notch.app
-TEAM_ID         := literal:REDACTED_TEAM_ID
-SIGN_IDENTITY   := literal:Developer ID Application: REDACTED_NAME ($(TEAM_ID))
-KEYCHAIN_PROFILE := OC-Notch-Notarize
+
+# Validate required local config
+ifndef TEAM_ID
+  $(error TEAM_ID not set. Copy local.mk.example to local.mk and fill in your values)
+endif
+ifndef DEVELOPER_NAME
+  $(error DEVELOPER_NAME not set. Copy local.mk.example to local.mk and fill in your values)
+endif
+
+SIGN_IDENTITY   := Developer ID Application: $(DEVELOPER_NAME) ($(TEAM_ID))
+KEYCHAIN_PROFILE ?= OC-Notch-Notarize
 
 SCHEME          := $(APP_NAME)
 PROJECT_DIR     := OC-Notch
@@ -54,10 +62,12 @@ else
 		$(MAKE) --no-print-directory _do-publish V=$$NEW_V
 endif
 
+REPO_URL := $(shell git remote get-url origin | sed 's/\.git$$//' | sed 's|git@github.com:|https://github.com/|')
+
 _do-publish: bump release git-tag gh-release
 	@echo ""
 	@echo "🚀 v$(V) published to GitHub Releases!"
-	@echo "   https://github.com/Jay-Qiu/OC-notch/releases/tag/v$(V)"
+	@echo "   $(REPO_URL)/releases/tag/v$(V)"
 
 check-clean:
 	@if [ -n "$$(git status --porcelain)" ]; then \
