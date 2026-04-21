@@ -84,15 +84,13 @@ gh-release:
 	@echo "→ Creating GitHub Release..."
 	@PREV_TAG=$$(git tag --sort=-v:refname | grep -v "v$(V)" | head -1); \
 	if [ -n "$$PREV_TAG" ]; then \
-		gh release create "v$(V)" $(ZIP_PATH) \
-			--title "v$(V)" \
-			--generate-notes \
-			--notes-start-tag "$$PREV_TAG"; \
+		CHANGELOG=$$(git log --pretty=format:"- %s" "$$PREV_TAG..HEAD"); \
 	else \
-		gh release create "v$(V)" $(ZIP_PATH) \
-			--title "v$(V)" \
-			--generate-notes; \
-	fi
+		CHANGELOG=$$(git log --pretty=format:"- %s"); \
+	fi; \
+	gh release create "v$(V)" $(ZIP_PATH) \
+		--title "v$(V)" \
+		--notes "$$CHANGELOG"
 
 release: clean generate build sign notarize staple zip
 	@echo ""
