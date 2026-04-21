@@ -365,6 +365,7 @@ final class SessionMonitorService {
         case .sessionDeleted(let sessionID):
             activeSessions.removeAll { $0.id == sessionID }
             pendingPermissions.removeAll { $0.sessionID == sessionID }
+            sessionToInstance.removeValue(forKey: sessionID)
             completionDetector.removeSession(id: sessionID)
 
         case .sessionStatus(let sessionID, let status):
@@ -372,7 +373,9 @@ final class SessionMonitorService {
             case .busy, .retry:
                 sessionToInstance[sessionID] = instanceID
             case .idle:
-                sessionToInstance.removeValue(forKey: sessionID)
+                // Keep the mapping — session still belongs to this instance.
+                // Cleared only when instance dies or session is deleted.
+                break
             }
             if let index = activeSessions.firstIndex(where: { $0.id == sessionID }) {
                 activeSessions[index].status = status
@@ -389,7 +392,6 @@ final class SessionMonitorService {
             }
 
         case .sessionIdle(let sessionID):
-            sessionToInstance.removeValue(forKey: sessionID)
             if let index = activeSessions.firstIndex(where: { $0.id == sessionID }) {
                 // Check for idle transition completion via detector
                 if let completion = completionDetector.checkIdleTransition(sessionID: sessionID, newStatus: .idle) {
