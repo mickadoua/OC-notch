@@ -18,6 +18,9 @@ DerivedData/
 # Local signing config (contains developer identity & team ID)
 local.mk
 
+# Purge script config (contains PII for history rewrite)
+scripts/purge-config.sh
+
 # Environment / secrets
 .env
 .env.*

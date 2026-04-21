@@ -1,0 +1,19 @@
+#!/bin/bash
+# ============================================================================
+# Purge script configuration — TEMPLATE
+# Copy this file to purge-config.sh and fill in your real values.
+# purge-config.sh is gitignored and will NOT be committed.
+# ============================================================================
+
+# Git identity to replace
+OLD_EMAIL="your-old-email@example.com"
+OLD_NAME="Your-Old-Git-Username"
+
+# Replacement identity
+NEW_EMAIL="maintainer@oc-notch.dev"
+NEW_NAME="OC-Notch Maintainer"
+
+# Strings to scrub from file contents (across all history)
+TEAM_ID="YOUR_APPLE_TEAM_ID"
+FULL_NAME="Your Full Legal Name"
+MACOS_USER="your-macos-username"

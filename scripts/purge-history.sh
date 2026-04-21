@@ -7,12 +7,10 @@
 #
 # What it does:
 #   1. Installs git-filter-repo (if not already installed)
-#   2. Replaces personal email in all commits
-#   3. Replaces author name in all commits
-#   4. Replaces Apple Team ID (literal:REDACTED_TEAM_ID) in all file contents
-#   5. Replaces full name (literal:REDACTED_NAME) in all file contents
-#   6. Replaces signing identity string in all file contents
-#   7. Cleans up reflog and garbage-collects
+#   2. Reads PII values from purge-config.sh (gitignored)
+#   3. Replaces personal email/name in all commit metadata
+#   4. Replaces sensitive strings in all file contents
+#   5. Cleans up reflog and garbage-collects
 #
 # After running:
 #   - You MUST force-push: git push --force --all && git push --force --tags
@@ -43,18 +41,24 @@ echo -e "${RED}║  All collaborators must re-clone after force-push.       ║$
 echo -e "${RED}╚══════════════════════════════════════════════════════════╝${NC}"
 echo ""
 
-# ─── Configuration: what to replace ──────────────────────────────
-# Change these to your desired replacements
-OLD_EMAIL="literal:maintainer@oc-notch.dev"
-NEW_EMAIL="maintainer@oc-notch.dev"
+# ─── Load configuration ──────────────────────────────────────────
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+CONFIG_FILE="${SCRIPT_DIR}/purge-config.sh"
 
-OLD_NAME="Jay-Qiu"
-NEW_NAME="OC-Notch Maintainer"
+if [ ! -f "$CONFIG_FILE" ]; then
+    echo -e "${RED}Error: ${CONFIG_FILE} not found.${NC}"
+    echo "Copy purge-config.sh.example → purge-config.sh and fill in your values."
+    exit 1
+fi
 
-# Strings to scrub from file contents (across all history)
-TEAM_ID="literal:REDACTED_TEAM_ID"
-FULL_NAME="literal:REDACTED_NAME"
-MACOS_USER="developer"
+source "$CONFIG_FILE"
+
+for var in OLD_EMAIL OLD_NAME NEW_EMAIL NEW_NAME TEAM_ID FULL_NAME MACOS_USER; do
+    if [ -z "${!var}" ]; then
+        echo -e "${RED}Error: ${var} is not set in ${CONFIG_FILE}${NC}"
+        exit 1
+    fi
+done
 
 # ─── Preflight checks ───────────────────────────────────────────
 if [ ! -d ".git" ]; then
