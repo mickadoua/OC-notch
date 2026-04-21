@@ -50,7 +50,7 @@ publish: check-clean
 ifdef V
 	@$(MAKE) --no-print-directory _do-publish V=$(V)
 else
-	@CURRENT=$$((/usr/libexec/PlistBuddy -c "Print CFBundleShortVersionString" $(PROJECT_DIR)/Sources/App/Info.plist)); \
+	@CURRENT=$$(/usr/libexec/PlistBuddy -c "Print CFBundleShortVersionString" $(PROJECT_DIR)/Sources/App/Info.plist); \
 	MAJOR=$$(echo $$CURRENT | cut -d. -f1); \
 	MINOR=$$(echo $$CURRENT | cut -d. -f2); \
 	PATCH=$$(echo $$CURRENT | cut -d. -f3); \
