@@ -1,9 +1,10 @@
 import SwiftUI
 
-/// Dropdown list showing all active sessions with rich status cards.
 struct SessionDropdownView: View {
     @Environment(SessionMonitorService.self) private var monitor
+    let questionQueue: QuestionQueueManager
     let onDismiss: () -> Void
+    var onResumeSession: ((String) -> Void)?
 
     var body: some View {
         ScrollView {
@@ -12,7 +13,13 @@ struct SessionDropdownView: View {
                     noSessionsView
                 } else {
                     ForEach(monitor.activeSessions) { session in
-                        SessionRowButton(session: session, monitor: monitor, onDismiss: onDismiss)
+                        SessionRowButton(
+                            session: session,
+                            monitor: monitor,
+                            questionQueue: questionQueue,
+                            onDismiss: onDismiss,
+                            onResumeSession: onResumeSession
+                        )
                     }
                 }
             }
@@ -20,8 +27,6 @@ struct SessionDropdownView: View {
         }
         .frame(maxHeight: 340)
     }
-
-    // MARK: - No Sessions
 
     private var noSessionsView: some View {
         VStack(spacing: DS.Spacing.sectionSpacing) {
@@ -42,17 +47,27 @@ struct SessionDropdownView: View {
 private struct SessionRowButton: View {
     let session: OCSession
     let monitor: SessionMonitorService
+    let questionQueue: QuestionQueueManager
     let onDismiss: () -> Void
+    var onResumeSession: ((String) -> Void)?
     @State private var isHovered = false
+
+    private var hasDismissedQuestions: Bool {
+        questionQueue.hasDismissedQuestions(for: session.id)
+    }
 
     var body: some View {
         Button {
-            onDismiss()
-            TerminalLauncher.activateTerminal(
-                tab: monitor.terminalTabForSession(session.id),
-                pid: monitor.pidForSession(session.id),
-                directory: session.directory
-            )
+            if hasDismissedQuestions {
+                onResumeSession?(session.id)
+            } else {
+                onDismiss()
+                TerminalLauncher.activateTerminal(
+                    tab: monitor.terminalTabForSession(session.id),
+                    pid: monitor.pidForSession(session.id),
+                    directory: session.directory
+                )
+            }
         } label: {
             HStack(alignment: .top, spacing: DS.Spacing.sectionSpacing) {
                 statusIndicator
@@ -144,11 +159,8 @@ private struct SessionRowButton: View {
         }
     }
 
-    // MARK: - Status Indicator
-
     private var statusIndicator: some View {
         ZStack {
-            // Pulse ring for busy sessions
             Circle()
                 .fill(statusColor.opacity(0.3))
                 .frame(width: 16, height: 16)
@@ -166,11 +178,13 @@ private struct SessionRowButton: View {
         .frame(width: 16, height: 16)
     }
 
-    // MARK: - Status Badge
-
     @ViewBuilder
     private var statusBadge: some View {
-        if monitor.pendingPermissions.contains(where: { $0.sessionID == session.id }) {
+        if hasDismissedQuestions {
+            let count = questionQueue.dismissedQuestionCount(for: session.id)
+            badgeCapsule(text: "\(count) Q", color: DS.Colors.accentRed, icon: "hourglass")
+        } else if monitor.pendingPermissions.contains(where: { $0.sessionID == session.id })
+            || monitor.pendingQuestions.contains(where: { $0.sessionID == session.id }) {
             badgeCapsule(text: "Needs input", color: DS.Colors.accentRed, icon: "exclamationmark.circle")
         } else {
             switch session.status {
@@ -204,10 +218,10 @@ private struct SessionRowButton: View {
         )
     }
 
-    // MARK: - Helpers
-
     private var statusColor: Color {
-        if monitor.pendingPermissions.contains(where: { $0.sessionID == session.id }) {
+        if hasDismissedQuestions
+            || monitor.pendingPermissions.contains(where: { $0.sessionID == session.id })
+            || monitor.pendingQuestions.contains(where: { $0.sessionID == session.id }) {
             return DS.Colors.accentRed
         }
         switch session.status {

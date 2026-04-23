@@ -9,6 +9,7 @@ struct NotchShellView: View {
     @State private var avatarScene = AvatarScene(size: CGSize(width: 36, height: 36))
     @State private var avatarStateManager = AvatarStateManager()
     @State private var permissionQueue = PermissionQueueManager()
+    @State private var questionQueue = QuestionQueueManager()
     @State private var notchState: NotchState = .collapsed
     @State private var isHovering = false
     @State private var clickOutsideMonitor: Any?
@@ -68,14 +69,16 @@ struct NotchShellView: View {
             }
         }
         .onChange(of: monitor.pendingQuestions) { oldQuestions, newQuestions in
-            if newQuestions.isEmpty == false && notchState != .permission {
+            questionQueue.sync(with: newQuestions)
+
+            if !questionQueue.isEmpty && notchState != .permission {
                 if newQuestions.count > oldQuestions.count {
                     userDismissed = false
                 }
                 if !userDismissed {
                     notchState = .question
                 }
-            } else if newQuestions.isEmpty && notchState == .question {
+            } else if questionQueue.isEmpty && notchState == .question {
                 notchState = .collapsed
                 userDismissed = false
             }
@@ -155,20 +158,50 @@ struct NotchShellView: View {
                 VStack(spacing: 0) {
                     PermissionRequestView(request: request)
 
-                    // Queue pagination dots
                     if permissionQueue.count > 1 {
                         queuePagination
                     }
                 }
+                .contentShape(Rectangle())
+                .onTapGesture { focusSession(request.sessionID) }
+                .onHover { hovering in
+                    if hovering { NSCursor.pointingHand.push() } else { NSCursor.pop() }
+                }
             }
         case .question:
-            if let request = monitor.pendingQuestions.first {
-                QuestionRequestView(request: request)
+            if let request = questionQueue.currentQuestion {
+                VStack(spacing: 0) {
+                    questionSessionHeader
+
+                    QuestionRequestView(request: request)
+                        .id(questionQueue.activeSessionID)
+                        .transition(
+                            .asymmetric(
+                                insertion: .move(edge: .trailing).combined(with: .opacity),
+                                removal: .move(edge: .leading).combined(with: .opacity)
+                            )
+                        )
+
+                    dismissSessionLink
+                }
+                .animation(.spring(response: 0.35, dampingFraction: 0.85), value: questionQueue.activeSessionID)
+                .contentShape(Rectangle())
+                .onTapGesture { focusSession(questionQueue.activeSessionID) }
+                .onHover { hovering in
+                    if hovering { NSCursor.pointingHand.push() } else { NSCursor.pop() }
+                }
             }
         case .notification(let completion):
             TaskCompletionView(completion: completion)
         case .dropdown:
-            SessionDropdownView(onDismiss: { notchState = .collapsed })
+            SessionDropdownView(
+                questionQueue: questionQueue,
+                onDismiss: { notchState = .collapsed },
+                onResumeSession: { sessionID in
+                    questionQueue.resumeSession(sessionID)
+                    notchState = .question
+                }
+            )
         }
     }
 
@@ -182,7 +215,7 @@ struct NotchShellView: View {
             userDismissed = false
             if !permissionQueue.isEmpty {
                 notchState = .permission
-            } else if !monitor.pendingQuestions.isEmpty {
+            } else if !questionQueue.isEmpty {
                 notchState = .question
             } else {
                 notchState = .dropdown
@@ -228,6 +261,103 @@ struct NotchShellView: View {
                 .foregroundStyle(DS.Colors.textTertiary)
         }
         .padding(.vertical, DS.Spacing.elementSpacing)
+    }
+
+    // MARK: - Focus Terminal
+
+    private func focusSession(_ sessionID: String?) {
+        guard let sessionID,
+              let session = monitor.activeSessions.first(where: { $0.id == sessionID })
+        else { return }
+        TerminalLauncher.activateTerminal(
+            tab: monitor.terminalTabForSession(sessionID),
+            pid: monitor.pidForSession(sessionID),
+            directory: session.directory
+        )
+    }
+
+    private func handleDismissCurrentQuestion() {
+        guard let question = questionQueue.currentQuestion else { return }
+        questionQueue.dismiss(questionID: question.id)
+        if questionQueue.isEmpty {
+            notchState = .collapsed
+            userDismissed = true
+        }
+    }
+
+    private func handleDismissSession() {
+        guard let sessionID = questionQueue.activeSessionID else { return }
+        questionQueue.dismissSession(sessionID)
+        if questionQueue.isEmpty {
+            notchState = .collapsed
+            userDismissed = true
+        }
+    }
+
+    // MARK: - Question Session Header
+
+    private var questionSessionHeader: some View {
+        HStack(spacing: DS.Spacing.elementSpacing) {
+            if let sessionID = questionQueue.activeSessionID,
+               let session = monitor.activeSessions.first(where: { $0.id == sessionID }) {
+                Image(systemName: "terminal")
+                    .font(.system(size: 9))
+                    .foregroundStyle(DS.Colors.accentBlue)
+
+                Text(session.title)
+                    .font(DS.Typography.caption())
+                    .foregroundStyle(DS.Colors.textSecondary)
+                    .lineLimit(1)
+            }
+
+            Spacer()
+
+            if questionQueue.currentSessionQuestionCount > 1 {
+                Text("\(questionQueue.currentSessionQuestionCount) questions")
+                    .font(DS.Typography.micro())
+                    .foregroundStyle(DS.Colors.textTertiary)
+            }
+
+            if questionQueue.waitingSessionCount > 0 {
+                Text("+\(questionQueue.waitingSessionCount) session\(questionQueue.waitingSessionCount > 1 ? "s" : "") en attente")
+                    .font(DS.Typography.micro())
+                    .foregroundStyle(DS.Colors.accentOrange)
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 2)
+                    .background(
+                        Capsule(style: .continuous)
+                            .fill(DS.Colors.accentOrange.opacity(0.12))
+                    )
+            }
+
+            Button { handleDismissCurrentQuestion() } label: {
+                Image(systemName: "xmark")
+                    .font(.system(size: 9, weight: .semibold))
+                    .foregroundStyle(DS.Colors.textTertiary)
+                    .frame(width: 20, height: 20)
+                    .background(
+                        Circle()
+                            .fill(DS.Colors.elevatedSurface)
+                    )
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(.bottom, DS.Spacing.elementSpacing)
+    }
+
+    private var dismissSessionLink: some View {
+        HStack {
+            Spacer()
+            Button { handleDismissSession() } label: {
+                Text("Ignorer cette session")
+                    .font(DS.Typography.micro())
+                    .foregroundStyle(DS.Colors.textTertiary)
+                    .underline()
+            }
+            .buttonStyle(.plain)
+            Spacer()
+        }
+        .padding(.top, DS.Spacing.elementSpacing)
     }
 
     // MARK: - State Sync
