@@ -39,6 +39,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     @objc func checkForUpdates(_ sender: Any?) {
+        // Collapse the notch pill so Sparkle's alert isn't trapped behind it.
+        NotificationCenter.default.post(name: .notchClickedOutside, object: nil)
         updaterController?.checkForUpdates(sender)
     }
 }
