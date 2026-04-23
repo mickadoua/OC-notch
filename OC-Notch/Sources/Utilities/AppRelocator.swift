@@ -64,6 +64,7 @@ enum AppRelocator {
         }
     }
 
+    @MainActor
     private static func relaunch(from path: String) {
         let task = Process()
         task.executableURL = URL(fileURLWithPath: "/bin/sh")
