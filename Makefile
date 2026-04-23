@@ -7,7 +7,8 @@
 #   make sign              — codesign the .app with Developer ID
 #   make notarize          — submit to Apple for notarization (waits for completion)
 #   make staple            — staple notarization ticket to .app
-#   make zip               — create distributable .zip
+#   make zip               — create distributable .zip (for Sparkle updates)
+#   make dmg               — create DMG installer with Applications shortcut
 #   make appcast           — sign zip with EdDSA + generate appcast.xml
 #   make setup-sparkle     — download Sparkle CLI tools (one-time)
 #   make clean             — remove build artifacts
@@ -54,9 +55,12 @@ VERSION         := $(V)
 endif
 ZIP_NAME        := $(APP_NAME)-v$(VERSION).zip
 ZIP_PATH        := $(BUILD_DIR)/release/$(ZIP_NAME)
+DMG_NAME        := $(APP_NAME)-v$(VERSION).dmg
+DMG_PATH        := $(BUILD_DIR)/release/$(DMG_NAME)
+DMG_STAGE       := $(BUILD_DIR)/dmg-stage
 
 # ─── Targets ─────────────────────────────────────────────────────
-.PHONY: release publish _do-publish bump build sign notarize staple zip appcast setup-sparkle clean generate check-clean
+.PHONY: release publish _do-publish bump build sign notarize staple zip dmg appcast setup-sparkle clean generate check-clean
 
 # ─── Publish: interactive or explicit release ─────────────────────
 # Interactive: make publish        (prompts for patch/minor/major)
@@ -105,14 +109,16 @@ gh-release:
 	else \
 		CHANGELOG=$$(git log --pretty=format:"- %s"); \
 	fi; \
-	gh release create "v$(V)" $(ZIP_PATH) $(BUILD_DIR)/release/appcast.xml \
+	gh release create "v$(V)" $(DMG_PATH) $(ZIP_PATH) $(BUILD_DIR)/release/appcast.xml \
 		--title "v$(V)" \
 		--notes "$$CHANGELOG"
 
-release: clean generate build sign notarize staple zip appcast
+release: clean generate build sign notarize staple zip dmg appcast
 	@echo ""
-	@echo "✅ Release complete: $(ZIP_PATH)"
-	@echo "   Appcast:          $(BUILD_DIR)/release/appcast.xml"
+	@echo "✅ Release complete:"
+	@echo "   DMG:     $(DMG_PATH)"
+	@echo "   ZIP:     $(ZIP_PATH)"
+	@echo "   Appcast: $(BUILD_DIR)/release/appcast.xml"
 	@echo "   Ready to upload to GitHub Releases."
 
 generate:
@@ -167,6 +173,42 @@ zip:
 	@rm -f $(ZIP_PATH)
 	cd $(BUILD_DIR)/release && ditto -c -k --keepParent $(APP_NAME).app $(ZIP_NAME)
 	@echo "→ $(ZIP_PATH) ($(shell du -h $(ZIP_PATH) | cut -f1))"
+
+dmg: $(APP_PATH)
+	@echo "→ Creating DMG installer..."
+	@rm -rf $(DMG_STAGE) $(DMG_PATH)
+	@hdiutil detach "/Volumes/$(APP_NAME)" -quiet 2>/dev/null || true
+	@mkdir -p $(DMG_STAGE)
+	@cp -R $(APP_PATH) $(DMG_STAGE)/
+	@ln -s /Applications $(DMG_STAGE)/Applications
+	hdiutil create -volname "$(APP_NAME)" -srcfolder $(DMG_STAGE) \
+		-ov -format UDRW -fs HFS+ $(BUILD_DIR)/release/rw-$(DMG_NAME)
+	hdiutil attach -readwrite -noverify -noautoopen $(BUILD_DIR)/release/rw-$(DMG_NAME)
+	@sleep 1
+	osascript \
+		-e 'tell application "Finder"' \
+		-e '  tell disk "$(APP_NAME)"' \
+		-e '    open' \
+		-e '    delay 1' \
+		-e '    set current view of container window to icon view' \
+		-e '    set toolbar visible of container window to false' \
+		-e '    set statusbar visible of container window to false' \
+		-e '    set bounds of container window to {200, 120, 860, 520}' \
+		-e '    set viewOptions to icon view options of container window' \
+		-e '    set arrangement of viewOptions to not arranged' \
+		-e '    set icon size of viewOptions to 120' \
+		-e '    set position of item "$(APP_NAME).app" of container window to {165, 190}' \
+		-e '    set position of item "Applications" of container window to {495, 190}' \
+		-e '    close' \
+		-e '  end tell' \
+		-e 'end tell'
+	sync
+	hdiutil detach "/Volumes/$(APP_NAME)" -quiet
+	hdiutil convert $(BUILD_DIR)/release/rw-$(DMG_NAME) -format UDZO \
+		-imagekey zlib-level=9 -o $(DMG_PATH)
+	@rm -f $(BUILD_DIR)/release/rw-$(DMG_NAME)
+	@rm -rf $(DMG_STAGE)
+	@echo "→ $(DMG_PATH) ($$(du -h $(DMG_PATH) | cut -f1))"
 
 clean:
 	@echo "→ Cleaning build artifacts..."

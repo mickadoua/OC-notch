@@ -15,6 +15,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         logger.warning("OC-Notch launched")
 
+        AppRelocator.moveToApplicationsIfNeeded()
+
         panelController = NotchPanelController()
         panelController?.showPanel()
         logger.warning("Panel shown, monitoring started")
