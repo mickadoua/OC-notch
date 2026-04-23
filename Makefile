@@ -57,6 +57,7 @@ ZIP_NAME        := $(APP_NAME)-v$(VERSION).zip
 ZIP_PATH        := $(BUILD_DIR)/release/$(ZIP_NAME)
 DMG_NAME        := $(APP_NAME)-v$(VERSION).dmg
 DMG_PATH        := $(BUILD_DIR)/release/$(DMG_NAME)
+DMG_VOLNAME     := Install $(APP_NAME)
 DMG_STAGE       := $(BUILD_DIR)/dmg-stage
 
 # ─── Targets ─────────────────────────────────────────────────────
@@ -176,18 +177,20 @@ zip:
 
 dmg: $(APP_PATH)
 	@echo "→ Creating DMG installer..."
+	@killall $(APP_NAME) 2>/dev/null || true
 	@rm -rf $(DMG_STAGE) $(DMG_PATH)
-	@hdiutil detach "/Volumes/$(APP_NAME)" -quiet 2>/dev/null || true
+	@hdiutil detach "/Volumes/$(DMG_VOLNAME)" -quiet 2>/dev/null || true
 	@mkdir -p $(DMG_STAGE)
 	@cp -R $(APP_PATH) $(DMG_STAGE)/
 	@ln -s /Applications $(DMG_STAGE)/Applications
-	hdiutil create -volname "$(APP_NAME)" -srcfolder $(DMG_STAGE) \
+	@xattr -cr $(DMG_STAGE)
+	hdiutil create -volname "$(DMG_VOLNAME)" -srcfolder $(DMG_STAGE) \
 		-ov -format UDRW -fs HFS+ $(BUILD_DIR)/release/rw-$(DMG_NAME)
 	hdiutil attach -readwrite -noverify -noautoopen $(BUILD_DIR)/release/rw-$(DMG_NAME)
 	@sleep 1
 	osascript \
 		-e 'tell application "Finder"' \
-		-e '  tell disk "$(APP_NAME)"' \
+		-e '  tell disk "$(DMG_VOLNAME)"' \
 		-e '    open' \
 		-e '    delay 1' \
 		-e '    set current view of container window to icon view' \
@@ -203,7 +206,7 @@ dmg: $(APP_PATH)
 		-e '  end tell' \
 		-e 'end tell'
 	sync
-	hdiutil detach "/Volumes/$(APP_NAME)" -quiet
+	hdiutil detach "/Volumes/$(DMG_VOLNAME)" -quiet
 	hdiutil convert $(BUILD_DIR)/release/rw-$(DMG_NAME) -format UDZO \
 		-imagekey zlib-level=9 -o $(DMG_PATH)
 	@rm -f $(BUILD_DIR)/release/rw-$(DMG_NAME)
