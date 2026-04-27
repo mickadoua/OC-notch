@@ -50,3 +50,6 @@ google-services.json
 # Xcode local config
 *.xcconfig
 !Shared.xcconfig
+
+# opencode
+.sisyphus/*
