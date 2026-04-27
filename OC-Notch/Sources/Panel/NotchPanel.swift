@@ -112,6 +112,7 @@ final class NotchPanelController {
         self.panel = panel
 
         observeScreenChanges()
+        observePanelVisibility()
 
         Task {
             await sessionMonitor.startMonitoring()
@@ -209,6 +210,27 @@ final class NotchPanelController {
         menu.addItem(quitItem)
 
         return menu
+    }
+
+    // MARK: - Panel Visibility
+
+    private func observePanelVisibility() {
+        withObservationTracking {
+            _ = sessionMonitor.activeSessions
+        } onChange: { [weak self] in
+            Task { @MainActor [weak self] in
+                self?.updatePanelVisibility()
+                self?.observePanelVisibility()
+            }
+        }
+        // Apply immediately in case sessions are already empty on first call
+        updatePanelVisibility()
+    }
+
+    private func updatePanelVisibility() {
+        let hasSessions = sessionMonitor.activeSessions.isEmpty == false
+        panel?.alphaValue = hasSessions ? 1 : 0
+        panel?.ignoresMouseEvents = !hasSessions
     }
 
     // MARK: - Screen Observation
