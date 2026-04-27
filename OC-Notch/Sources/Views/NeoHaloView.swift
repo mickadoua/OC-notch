@@ -10,6 +10,10 @@ enum NeoHaloState {
 struct NeoHaloOverlay: View {
     let state: NeoHaloState
     let cornerRadius: CGFloat
+    /// When set, the `.thinking` halo is rendered as a centered shape of this
+    /// size — typically the hardware notch dimensions — instead of overflowing
+    /// the full pill bar.
+    var thinkingNotchSize: CGSize? = nil
 
     var body: some View {
         Group {
@@ -17,14 +21,21 @@ struct NeoHaloOverlay: View {
             case .none:
                 EmptyView()
             case .thinking:
-                ProgressingHalo(cornerRadius: cornerRadius)
+                if let size = thinkingNotchSize {
+                    ProgressingHalo(cornerRadius: cornerRadius)
+                        .frame(width: size.width, height: size.height)
+                } else {
+                    ProgressingHalo(cornerRadius: cornerRadius)
+                        .padding(-6)
+                }
             case .permission:
                 FlashingHalo(color: DS.Colors.accentOrange, cornerRadius: cornerRadius)
+                    .padding(-6)
             case .question:
                 SteadyHalo(color: DS.Colors.accentBlue, cornerRadius: cornerRadius)
+                    .padding(-6)
             }
         }
-        .padding(-6)
         .allowsHitTesting(false)
     }
 }

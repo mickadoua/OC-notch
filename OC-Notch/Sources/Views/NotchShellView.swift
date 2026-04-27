@@ -26,6 +26,9 @@ struct NotchShellView: View {
               let rightArea = screen.auxiliaryTopRightArea else { return 180 }
         return rightArea.minX - leftArea.maxX
     }()
+    @State private var currentNotchHeight: CGFloat = {
+        NSScreen.targetScreen?.auxiliaryTopLeftArea?.height ?? 32
+    }()
 
     var onExpandChange: ((Bool) -> Void)?
 
@@ -138,7 +141,11 @@ struct NotchShellView: View {
                     RoundedRectangle(cornerRadius: DS.Radii.compactBottom, style: .continuous)
                         .fill(.ultraThinMaterial)
                         .opacity(isHovering && notchState == .collapsed ? 1 : 0)
-                    NeoHaloOverlay(state: currentHaloState, cornerRadius: DS.Radii.compactBottom)
+                    NeoHaloOverlay(
+                        state: currentHaloState,
+                        cornerRadius: DS.Radii.compactBottom,
+                        thinkingNotchSize: thinkingNotchSize
+                    )
                 }
                 .animation(DS.Animations.smooth, value: isHovering)
                 .animation(DS.Animations.smooth, value: themeManager.current)
@@ -437,6 +444,13 @@ struct NotchShellView: View {
 
     // MARK: - Halo State
 
+    /// Size of the hardware notch (or a sensible default on non-notched
+    /// displays). Used to constrain the `.thinking` halo to the inner notch
+    /// shape instead of the full pill bar.
+    private var thinkingNotchSize: CGSize {
+        CGSize(width: currentNotchWidth, height: currentNotchHeight)
+    }
+
     private var currentHaloState: NeoHaloState {
         guard themeManager.current == .neo else { return .none }
         if !monitor.pendingPermissions.isEmpty { return .permission }
@@ -457,6 +471,7 @@ struct NotchShellView: View {
            let leftArea = screen.auxiliaryTopLeftArea,
            let rightArea = screen.auxiliaryTopRightArea {
             currentNotchWidth = rightArea.minX - leftArea.maxX
+            currentNotchHeight = leftArea.height
         }
     }
 }
