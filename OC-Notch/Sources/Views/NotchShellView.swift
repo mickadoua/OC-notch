@@ -13,6 +13,7 @@ struct NotchShellView: View {
     @State private var notchState: NotchState = .collapsed
     @State private var isHovering = false
     @State private var clickOutsideMonitor: Any?
+    @State private var themeManager = ThemeManager.shared
     /// When `true`, auto-expand for pending permissions/questions is suppressed
     /// until the user clicks the notch bar or a *new* request arrives.
     @State private var userDismissed = false
@@ -135,6 +136,7 @@ struct NotchShellView: View {
                     RoundedRectangle(cornerRadius: DS.Radii.compactBottom, style: .continuous)
                         .fill(.ultraThinMaterial)
                         .opacity(isHovering && notchState == .collapsed ? 1 : 0)
+                    NeoHaloOverlay(state: currentHaloState, cornerRadius: DS.Radii.compactBottom)
                 }
                 .animation(DS.Animations.smooth, value: isHovering)
             )
@@ -418,6 +420,16 @@ struct NotchShellView: View {
                 clickOutsideMonitor = nil
             }
         }
+    }
+
+    // MARK: - Halo State
+
+    private var currentHaloState: NeoHaloState {
+        guard themeManager.current == .neo else { return .none }
+        if !monitor.pendingPermissions.isEmpty { return .permission }
+        if !monitor.pendingQuestions.isEmpty { return .question }
+        if monitor.activeSessions.contains(where: { $0.status == .busy }) { return .thinking }
+        return .none
     }
 
     // MARK: - Notch Width
