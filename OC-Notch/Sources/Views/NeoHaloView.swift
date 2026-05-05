@@ -44,19 +44,19 @@ private struct ProgressingHalo: View {
     let cornerRadius: CGFloat
 
     var body: some View {
-        TimelineView(.animation) { context in
+        TimelineView(.animation) { (context: TimelineViewDefaultContext) in
             let t = context.date.timeIntervalSinceReferenceDate
             let phase = (t.truncatingRemainder(dividingBy: 1.6)) / 1.6
 
             let head = phase
             let tail = max(0.0, head - 0.35)
             let stops: [Gradient.Stop] = [
-                .init(color: .clear, at: 0.0),
-                .init(color: .clear, at: max(0.0, tail - 0.001)),
-                .init(color: DS.Colors.accentGreen.opacity(0.0), at: tail),
-                .init(color: DS.Colors.accentGreen, at: head),
-                .init(color: DS.Colors.accentGreen.opacity(0.0), at: min(1.0, head + 0.001)),
-                .init(color: .clear, at: 1.0)
+                .init(color: .clear, location: 0.0),
+                .init(color: .clear, location: max(0.0, tail - 0.001)),
+                .init(color: DS.Colors.accentGreen.opacity(0.0), location: tail),
+                .init(color: DS.Colors.accentGreen, location: head),
+                .init(color: DS.Colors.accentGreen.opacity(0.0), location: min(1.0, head + 0.001)),
+                .init(color: .clear, location: 1.0)
             ]
 
             let gradient = LinearGradient(
@@ -82,7 +82,7 @@ private struct FlashingHalo: View {
     let cornerRadius: CGFloat
 
     var body: some View {
-        TimelineView(.animation) { context in
+        TimelineView(.animation) { (context: TimelineViewDefaultContext) in
             let t = context.date.timeIntervalSinceReferenceDate
             let frequency = 2.2
             let raw = sin(t * 2 * .pi * frequency)
@@ -105,7 +105,7 @@ private struct SteadyHalo: View {
     let cornerRadius: CGFloat
 
     var body: some View {
-        TimelineView(.animation) { context in
+        TimelineView(.animation) { (context: TimelineViewDefaultContext) in
             let t = context.date.timeIntervalSinceReferenceDate
             let frequency = 0.6
             let raw = sin(t * 2 * .pi * frequency)
