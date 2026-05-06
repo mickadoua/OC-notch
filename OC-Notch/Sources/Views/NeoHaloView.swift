@@ -159,14 +159,23 @@ private struct FlashingHalo: View {
 
     var body: some View {
         TimelineView(.animation) { context in
-            let i = intensity(for: context.date)
-            ZStack {
-                NeoHaloOverlay.notchShape(cornerRadius: cornerRadius)
-                    .strokeBorder(color.opacity(i), lineWidth: 3)
-                    .blur(radius: 8 + i * 4)
-                NeoHaloOverlay.notchShape(cornerRadius: cornerRadius)
-                    .strokeBorder(color.opacity(i), lineWidth: 1.2)
+            flashFrame(date: context.date)
+        }
+    }
+
+    @ViewBuilder
+    private func flashFrame(date: Date) -> some View {
+        let i = intensity(for: date)
+        Canvas { ctx, size in
+            let path = NeoHaloOverlay.notchShape(cornerRadius: cornerRadius)
+                .path(in: CGRect(origin: .zero, size: size))
+            let glowStyle = StrokeStyle(lineWidth: 5, lineCap: .round, lineJoin: .round)
+            let coreStyle = StrokeStyle(lineWidth: 1.5, lineCap: .round, lineJoin: .round)
+            ctx.drawLayer { glow in
+                glow.addFilter(.blur(radius: 6))
+                glow.stroke(path, with: .color(color.opacity(i * 0.9)), style: glowStyle)
             }
+            ctx.stroke(path, with: .color(color.opacity(i)), style: coreStyle)
         }
     }
 }
@@ -185,14 +194,23 @@ private struct SteadyHalo: View {
 
     var body: some View {
         TimelineView(.animation) { context in
-            let o = opacity(for: context.date)
-            ZStack {
-                NeoHaloOverlay.notchShape(cornerRadius: cornerRadius)
-                    .strokeBorder(color.opacity(o), lineWidth: 3)
-                    .blur(radius: 8)
-                NeoHaloOverlay.notchShape(cornerRadius: cornerRadius)
-                    .strokeBorder(color.opacity(o), lineWidth: 1.2)
+            steadyFrame(date: context.date)
+        }
+    }
+
+    @ViewBuilder
+    private func steadyFrame(date: Date) -> some View {
+        let o = opacity(for: date)
+        Canvas { ctx, size in
+            let path = NeoHaloOverlay.notchShape(cornerRadius: cornerRadius)
+                .path(in: CGRect(origin: .zero, size: size))
+            let glowStyle = StrokeStyle(lineWidth: 5, lineCap: .round, lineJoin: .round)
+            let coreStyle = StrokeStyle(lineWidth: 1.5, lineCap: .round, lineJoin: .round)
+            ctx.drawLayer { glow in
+                glow.addFilter(.blur(radius: 6))
+                glow.stroke(path, with: .color(color.opacity(o * 0.9)), style: glowStyle)
             }
+            ctx.stroke(path, with: .color(color.opacity(o)), style: coreStyle)
         }
     }
 }
